@@ -1,5 +1,5 @@
-TEST REPORT ANALYZER - Windows quick start
-==========================================
+TEST REPORT ANALYZER - quick start
+==================================
 
 ONE-TIME SETUP
 --------------
@@ -9,33 +9,26 @@ ONE-TIME SETUP
 
 HOW TO USE IT
 -------------
-Easiest - drag and drop:
-   Drag a FOLDER of PDF reports (or some selected PDF files)
-   onto "run.bat".
-   - The first run installs what it needs (needs internet, ~1 minute).
-   - When it finishes, an "output" folder opens containing:
-        TR_Summary.xlsx   <- your FX / SD summary, one row per specimen
-        summary.csv
+1. Put your PDF reports into the "reports" folder.
+2. Run the launcher, either way:
+      - Double-click "run.py"  (works if Python is installed), OR
+      - Open a terminal / Command Prompt in this folder and type:
+            python run.py
+   The first run installs what it needs (needs internet, ~1 minute).
+3. When it finishes, the "output" folder contains:
+      TR_Summary.xlsx   <- your FX / SD summary, one row per specimen
+      summary.csv
 
-Or use the reports folder:
-   1. Double-click "run.bat" once. It creates a "reports" folder.
-   2. Put your PDF reports into that "reports" folder.
-   3. Double-click "run.bat" again.
-
-Results are rewritten into the "output" folder every time you run it.
+To analyze a different folder instead of "reports":
+      python run.py "C:\path\to\your\reports"
 
 OPTIONAL - append into your OWN template instead of a new file
 --------------------------------------------------------------
-Open a Command Prompt in this folder (type "cmd" in the address bar of
-the File Explorer window, then Enter) and run:
+      python -m report_analyzer reports --xlsx output\filled.xlsx --xlsx-template "YourTemplate.xlsx"
 
-   py -m report_analyzer reports --xlsx output\filled.xlsx --xlsx-template "YourTemplate.xlsx"
-
-This keeps your template's existing rows and styling and adds new rows
-below them (windows on the FX sheet, doors on the SD sheet).
-
-TROUBLESHOOTING
----------------
-- "Python is not installed" -> install it (step 1) and tick "Add to PATH".
-- A black window flashes and closes -> right-click run.bat > Edit to read
-  messages, or run it from a Command Prompt to see the output.
+TIPS
+----
+- To open a Command Prompt in this folder: type "cmd" in the address bar of
+  the File Explorer window showing these files, then press Enter.
+- "Python is not installed / not recognised" -> install it (step 1) and make
+  sure you ticked "Add python.exe to PATH".
