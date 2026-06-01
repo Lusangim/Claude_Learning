@@ -1,0 +1,4 @@
+Put your PDF test reports in this folder, then double-click "run.bat"
+(located in the folder above this one).
+
+You can also drag a folder of PDFs directly onto run.bat instead.

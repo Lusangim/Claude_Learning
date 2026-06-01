@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Analyze: reports/ folder",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "report_analyzer",
+      "args": ["reports", "--xlsx", "output/TR_Summary.xlsx", "--csv", "output/summary.csv", "--print"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    },
+    {
+      "name": "Analyze: choose folder or file...",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "report_analyzer",
+      "args": ["${input:target}", "--xlsx", "output/TR_Summary.xlsx", "--csv", "output/summary.csv", "--print"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "target",
+      "type": "promptString",
+      "description": "Path to a folder of PDFs (or a single PDF) to analyze",
+      "default": "reports"
+    }
+  ]
+}

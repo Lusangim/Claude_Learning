@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install dependencies",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["-m", "pip", "install", "-r", "requirements.txt"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze reports folder",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["-m", "report_analyzer", "reports", "--xlsx", "output/TR_Summary.xlsx", "--csv", "output/summary.csv", "--print"],
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": ["tests/test_parsing.py"],
+      "problemMatcher": []
+    }
+  ]
+}

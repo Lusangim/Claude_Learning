@@ -1,0 +1,15 @@
+# Never commit client/test-report PDFs or generated analysis output.
+# These reports belong to the labs/clients that produced them.
+*.pdf
+/output/
+/scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
