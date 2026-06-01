@@ -7,12 +7,25 @@ hardware construction of every test specimen — into **per-report JSON**, a
 "TR Summary" template layout** (one row per specimen, windows routed to the
 `FX Temp.` sheet and doors to `SD Temp.`).
 
-Two common laboratory report layouts are recognised, with a generic fallback:
+## Two extraction backends
+
+| Backend | Flag | Needs | Handles |
+| ------- | ---- | ----- | ------- |
+| **AI (Claude)** | `--mode ai` | `ANTHROPIC_API_KEY` (small cost/report) | **Any** lab/format — reads the report directly into the fields |
+| **Rules** | `--mode rules` | nothing (offline) | The two built-in layouts below |
+
+Default is **`--mode auto`**: AI when `ANTHROPIC_API_KEY` is set, otherwise the
+rules parser. Both backends produce the same JSON / CSV / XLSX output.
+
+The rules parser recognises two common layouts, with a generic fallback:
 
 | Family | Example standard | Layout | Specimens |
 | ------ | ---------------- | ------ | --------- |
 | **TAS** | TAS 201 / 202 / 203 (Florida Building Code, HVHZ) | numbered `SECTION` headers, unruled tables | usually one |
 | **NAFS** | AAMA/WDMA/CSA 101/I.S.2/A440 | labelled headers, ruled tables | often several |
+
+For the many other lab formats out there, use **AI mode** — it needs no
+per-lab code.
 
 ## What it extracts
 
@@ -69,7 +82,20 @@ python -m report_analyzer ./reports --xlsx output/filled.xlsx \
 
 # Encrypted PDF with a user password
 python -m report_analyzer secured.pdf --password "hunter2" --print
+
+# AI extraction (handles any lab format) — set your key first
+export ANTHROPIC_API_KEY=sk-ant-...        # Windows: set ANTHROPIC_API_KEY=sk-ant-...
+python -m report_analyzer ./reports --mode ai --xlsx output/TR_Summary.xlsx
 ```
+
+### Picking a backend
+
+`--mode auto` (default) uses AI when `ANTHROPIC_API_KEY` is set, else the rules
+parser. Force one with `--mode ai` or `--mode rules` (`--ai` / `--rules` are
+shortcuts). AI mode reads each report with Claude (`--model`, default
+`claude-opus-4-8`) into the exact same fields, so it handles formats the rules
+parser has never seen. Get a key at <https://console.anthropic.com>; the long
+instruction prompt is cached, so batch runs stay cheap.
 
 | Option | Meaning |
 | ------ | ------- |
@@ -77,6 +103,9 @@ python -m report_analyzer secured.pdf --password "hunter2" --print
 | `--csv FILE` | write a flat one-row-per-specimen summary across all inputs |
 | `--xlsx FILE` | write an Excel summary in the FX/SD "TR Summary" layout |
 | `--xlsx-template SRC` | with `--xlsx`, append rows into a copy of template `SRC` instead of a fresh workbook |
+| `--mode {auto,ai,rules}` | extraction backend (default `auto`) |
+| `--ai` / `--rules` | shortcuts for `--mode ai` / `--mode rules` |
+| `--model` | Claude model for AI mode (default `claude-opus-4-8`) |
 | `--print` | print a readable summary for each report |
 | `--password` | password for encrypted PDFs (default: empty) |
 | `--quiet` | suppress progress messages |
@@ -153,10 +182,11 @@ python -m report_analyzer samples/sample_tas_report.pdf --print
 ```
 PDF ─▶ extraction.py ─▶ Document(pages: text + cleaned tables)
                               │
-                         parsing.py  ── detect family (TAS / NAFS / generic)
-                              │            ├─ identity & dates  (anchored regex)
-                              │            ├─ per-specimen performance
-                              │            └─ frame / glazing / hardware
+                ┌─────────────┴─────────────┐
+        parsing.py (rules)           ai_extract.py (Claude)
+        detect TAS / NAFS            one structured-output call,
+        regex + tables               any format → the schema
+                └─────────────┬─────────────┘
                               ▼
                           Report (models.py)
                               │

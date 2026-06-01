@@ -24,6 +24,24 @@ from .models import Report
 from .parsing import analyze_pdf
 
 
+def _use_ai(mode: str) -> bool:
+    """Decide whether to use the AI backend for the given --mode."""
+    if mode == "ai":
+        return True
+    if mode == "rules":
+        return False
+    # auto: use AI when a key is available, else fall back to rules.
+    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+
+
+def _analyze_one(path: str, mode: str, model: str, password: str) -> Report:
+    if _use_ai(mode):
+        from .ai_extract import analyze_pdf_ai
+
+        return analyze_pdf_ai(path, model=model, password=password)
+    return analyze_pdf(path, password=password)
+
+
 def _gather_pdfs(inputs: List[str]) -> List[str]:
     pdfs: List[str] = []
     for item in inputs:
@@ -55,6 +73,18 @@ def build_parser() -> argparse.ArgumentParser:
         "instead of building a fresh one",
     )
     p.add_argument("--password", default="", help="password for encrypted PDFs (default: empty)")
+    p.add_argument(
+        "--mode", choices=["auto", "ai", "rules"], default="auto",
+        help="extraction backend: 'ai' (Claude, handles any format; needs "
+        "ANTHROPIC_API_KEY), 'rules' (built-in TAS/NAFS parser, no API), or "
+        "'auto' (AI if a key is set, else rules). Default: auto.",
+    )
+    p.add_argument("--ai", action="store_true", help="shortcut for --mode ai")
+    p.add_argument("--rules", action="store_true", help="shortcut for --mode rules")
+    p.add_argument(
+        "--model", default="claude-opus-4-8",
+        help="Claude model for --mode ai (default: claude-opus-4-8)",
+    )
     p.add_argument("--print", dest="show", action="store_true", help="print a summary per report")
     p.add_argument("--quiet", action="store_true", help="suppress progress messages")
     return p
@@ -67,11 +97,16 @@ def main(argv: List[str] | None = None) -> int:
         print("No PDF files found.", file=sys.stderr)
         return 2
 
+    mode = "ai" if args.ai else "rules" if args.rules else args.mode
+    if not args.quiet:
+        backend = "AI (Claude)" if _use_ai(mode) else "rules"
+        print(f"[backend] {backend}", file=sys.stderr)
+
     reports: List[Report] = []
     failures = 0
     for path in pdfs:
         try:
-            report = analyze_pdf(path, password=args.password)
+            report = _analyze_one(path, mode, args.model, args.password)
         except Exception as exc:  # keep going across a batch
             failures += 1
             print(f"[error] {path}: {exc}", file=sys.stderr)

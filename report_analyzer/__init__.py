@@ -20,5 +20,13 @@ from .extraction import load_document
 from .models import Report, Specimen
 from .parsing import analyze, analyze_pdf
 
-__all__ = ["analyze", "analyze_pdf", "load_document", "Report", "Specimen"]
+
+def analyze_pdf_ai(*args, **kwargs):
+    """AI-powered extraction (lazy import so rules mode never requires anthropic)."""
+    from .ai_extract import analyze_pdf_ai as _impl
+
+    return _impl(*args, **kwargs)
+
+
+__all__ = ["analyze", "analyze_pdf", "analyze_pdf_ai", "load_document", "Report", "Specimen"]
 __version__ = "0.1.0"

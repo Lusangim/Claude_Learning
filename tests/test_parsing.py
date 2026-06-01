@@ -404,6 +404,81 @@ def test_xlsx_date_prefers_revised():
     assert _parse_date(r) == datetime.date(2026, 1, 19)
 
 
+# AI-extraction JSON -> Report mapping (no API call; tests the pure mapping).
+AI_SAMPLE = {
+    "report_number": "QCT25-7572.16",
+    "standard_family": "AAMA/WDMA/CSA 101/I.S.2/A440 (NAFS)",
+    "test_standards": ["AAMA/WDMA/CSA 101/I.S.2/A440-22", "AAMA 450-20"],
+    "laboratory": "Quast Consulting and Testing, Inc.",
+    "client": "Quaker Windows and Doors",
+    "product_type": "C200 Fixed Transom",
+    "series_model": "C-Mull Sidelite",
+    "product_category": "window",
+    "report_date": "01/21/2026",
+    "test_dates": "08/25/2025 - 08/26/2025",
+    "overall_result": "Pass",
+    "specimens": [
+        {
+            "specimen_id": "1",
+            "label": "C-Mull Sidelite",
+            "product_designator": "Class LC - PG50: 2438 x 3658 mm (~96 x 144 in) - Type SLT",
+            "design_pressure": "+50.1 / -50.1 psf",
+            "air_infiltration": "0.0 cfm/ft2 @ 1.57 psf",
+            "water_penetration": "No Penetration @ 7.52 psf",
+            "overall_size": "96 x 144 in",
+            "daylight_opening": "44.13 x 140.13 in",
+            "frame": [
+                {"member": "Frame", "material": "Aluminum",
+                 "detail": "Thermally broken, mitered, siliconed, two corner keys"},
+            ],
+            "glazing": {
+                "glass_type": "1\" IG",
+                "makeup": "1/4\" tempered\n1/2\" air space\n1/4\" tempered",
+                "method": "Set from exterior against silicone",
+                "bite": "3/8\"",
+            },
+            "hardware": [],
+            "results": [
+                {"name": "Air Infiltration", "value": "PASS"},
+                {"name": "Uniform Load Structural", "value": "PASS"},
+                {"name": "Forced Entry Resistance", "value": "Grade 10, PASS"},
+            ],
+        }
+    ],
+}
+
+
+def test_ai_mapping_builds_report():
+    from report_analyzer.ai_extract import _to_report
+
+    report = _to_report(AI_SAMPLE, source="qct.pdf")
+    assert report.report_number == "QCT25-7572.16"
+    assert report.laboratory == "Quast Consulting and Testing, Inc."
+    assert report.product_category == "window"
+    assert report.test_standards == ["AAMA/WDMA/CSA 101/I.S.2/A440-22", "AAMA 450-20"]
+    assert len(report.specimens) == 1
+    spec = report.specimens[0]
+    assert spec.design_pressure == "+50.1 / -50.1 psf"
+    assert spec.overall_size == "96 x 144 in"
+    assert spec.construction.glazing.bite == '3/8"'
+    assert spec.construction.frame[0].material == "Aluminum"
+    assert spec.results["Forced Entry Resistance"] == "Grade 10, PASS"
+
+
+def test_ai_mapping_routes_by_category():
+    from report_analyzer.ai_extract import _to_report
+    from report_analyzer.xlsx_export import is_door, split_rows
+
+    window = _to_report(AI_SAMPLE, source="qct.pdf")
+    door = _to_report({**AI_SAMPLE, "product_category": "door",
+                       "product_type": "Sliding Patio Door"}, source="d.pdf")
+    assert not is_door(window)
+    assert is_door(door)
+    fx, sd = split_rows([window, door])
+    assert len(fx) == 1 and len(sd) == 1
+    assert fx[0][0] == "QCT25-7572.16"  # report number in column A
+
+
 # --------------------------------------------------------------------------- #
 # Script runner (no pytest required)
 # --------------------------------------------------------------------------- #

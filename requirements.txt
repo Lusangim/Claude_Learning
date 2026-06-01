@@ -1,3 +1,6 @@
 PyMuPDF>=1.24
 # openpyxl powers the Excel ("TR Summary" FX/SD) export; only needed for --xlsx.
 openpyxl>=3.1
+# anthropic powers AI extraction (--mode ai), which handles any report format.
+# Only needed for AI mode; the built-in rules parser works without it.
+anthropic>=0.69

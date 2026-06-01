@@ -85,6 +85,7 @@ class Report:
     client_location: str = ""
     product_type: str = ""
     series_model: str = ""
+    product_category: str = ""      # "window" | "door" (used for FX/SD routing)
     report_date: str = ""
     issue_date: str = ""
     revised_date: str = ""

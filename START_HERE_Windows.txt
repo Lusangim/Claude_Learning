@@ -22,6 +22,18 @@ HOW TO USE IT
 To analyze a different folder instead of "reports":
       python run.py "C:\path\to\your\reports"
 
+HANDLING ANY REPORT FORMAT (AI MODE)
+------------------------------------
+The built-in parser knows two common lab formats. For other companies/formats,
+use AI mode, which reads any report with Claude. You need an API key from
+https://console.anthropic.com (small cost per report). In a Command Prompt here:
+
+   set ANTHROPIC_API_KEY=sk-ant-your-key-here
+   python run.py
+
+(run.py uses AI automatically once the key is set. There is also
+ "python -m report_analyzer reports --mode ai --xlsx output\TR_Summary.xlsx".)
+
 OPTIONAL - append into your OWN template instead of a new file
 --------------------------------------------------------------
       python -m report_analyzer reports --xlsx output\filled.xlsx --xlsx-template "YourTemplate.xlsx"
