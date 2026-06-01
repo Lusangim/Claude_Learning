@@ -123,9 +123,18 @@ The project ships with `.vscode/launch.json` and `.vscode/tasks.json`:
    reports/ folder"** — or **"Analyze: choose folder or file…"** to be prompted
    for any path. Results land in `output/` (open `output/TR_Summary.xlsx`).
 
-### On Windows (no command line)
+### Simple launcher (any OS)
 
-Double-click `run.bat`, or drag a folder of PDFs onto it. See
+Put PDFs in the `reports/` folder, then run:
+
+```bash
+python run.py                 # analyzes ./reports
+python run.py path/to/folder  # or any folder / PDFs you pass
+```
+
+`run.py` installs dependencies on first run, writes
+`output/TR_Summary.xlsx` + `output/summary.csv`, and opens the output folder
+on desktop systems. On Windows you can also just double-click `run.py`. See
 `START_HERE_Windows.txt`.
 
 ## Try it without any real reports
