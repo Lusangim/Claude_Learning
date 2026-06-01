@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "report-analyzer"
+version = "0.1.0"
+description = "Extract product information from fenestration (window/door) building-code test report PDFs."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["PyMuPDF>=1.24", "openpyxl>=3.1"]
+
+[project.scripts]
+report-analyzer = "report_analyzer.cli:main"
+
+[tool.setuptools]
+packages = ["report_analyzer"]
