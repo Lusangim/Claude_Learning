@@ -22,11 +22,21 @@ from .parsing import analyze, analyze_pdf
 
 
 def analyze_pdf_ai(*args, **kwargs):
-    """AI-powered extraction (lazy import so rules mode never requires anthropic)."""
+    """AI-powered extraction via Claude (lazy import so rules mode never requires anthropic)."""
     from .ai_extract import analyze_pdf_ai as _impl
 
     return _impl(*args, **kwargs)
 
 
-__all__ = ["analyze", "analyze_pdf", "analyze_pdf_ai", "load_document", "Report", "Specimen"]
+def analyze_pdf_llm(*args, **kwargs):
+    """Free/bring-your-own LLM extraction (lazy import so rules mode never requires openai)."""
+    from .llm_extract import analyze_pdf_llm as _impl
+
+    return _impl(*args, **kwargs)
+
+
+__all__ = [
+    "analyze", "analyze_pdf", "analyze_pdf_ai", "analyze_pdf_llm",
+    "load_document", "Report", "Specimen",
+]
 __version__ = "0.1.0"

@@ -7,15 +7,19 @@ hardware construction of every test specimen — into **per-report JSON**, a
 "TR Summary" template layout** (one row per specimen, windows routed to the
 `FX Temp.` sheet and doors to `SD Temp.`).
 
-## Two extraction backends
+## Extraction backends
 
 | Backend | Flag | Needs | Handles |
 | ------- | ---- | ----- | ------- |
-| **AI (Claude)** | `--mode ai` | `ANTHROPIC_API_KEY` (small cost/report) | **Any** lab/format — reads the report directly into the fields |
+| **Free LLM** | `--mode llm` | a **free** key (e.g. Gemini free tier) or local Ollama | **Any** lab/format |
+| **AI (Claude)** | `--mode ai` | `ANTHROPIC_API_KEY` (~1–5¢/report) | **Any** lab/format — highest accuracy |
 | **Rules** | `--mode rules` | nothing (offline) | The two built-in layouts below |
 
-Default is **`--mode auto`**: AI when `ANTHROPIC_API_KEY` is set, otherwise the
-rules parser. Both backends produce the same JSON / CSV / XLSX output.
+Default is **`--mode auto`**: it picks Claude if `ANTHROPIC_API_KEY` is set, else
+a free-LLM key if one is set (Gemini/Groq/OpenRouter), else the offline rules
+parser. **All three backends produce the same JSON / CSV / XLSX output** — they
+fill the identical fields, so you can run for free and still get the FX/SD
+"TR Summary" spreadsheet.
 
 The rules parser recognises two common layouts, with a generic fallback:
 
@@ -83,19 +87,30 @@ python -m report_analyzer ./reports --xlsx output/filled.xlsx \
 # Encrypted PDF with a user password
 python -m report_analyzer secured.pdf --password "hunter2" --print
 
-# AI extraction (handles any lab format) — set your key first
+# FREE LLM extraction (handles any format) — e.g. Google Gemini free tier
+export GEMINI_API_KEY=...                  # free key: https://aistudio.google.com/apikey
+python -m report_analyzer ./reports --mode llm --xlsx output/TR_Summary.xlsx
+
+# AI extraction with Claude (highest accuracy) — paid
 export ANTHROPIC_API_KEY=sk-ant-...        # Windows: set ANTHROPIC_API_KEY=sk-ant-...
 python -m report_analyzer ./reports --mode ai --xlsx output/TR_Summary.xlsx
 ```
 
 ### Picking a backend
 
-`--mode auto` (default) uses AI when `ANTHROPIC_API_KEY` is set, else the rules
-parser. Force one with `--mode ai` or `--mode rules` (`--ai` / `--rules` are
-shortcuts). AI mode reads each report with Claude (`--model`, default
-`claude-opus-4-8`) into the exact same fields, so it handles formats the rules
-parser has never seen. Get a key at <https://console.anthropic.com>; the long
-instruction prompt is cached, so batch runs stay cheap.
+`--mode auto` (default) chooses by which key is set (Claude → free-LLM → rules).
+Force one with `--mode llm`, `--mode ai`, or `--mode rules` (`--llm` / `--ai` /
+`--rules` are shortcuts). All read each report into the **same** fields, so any
+backend yields the same JSON/CSV/XLSX.
+
+- **Free LLM** (`--mode llm`): any OpenAI-compatible endpoint. `--provider`
+  selects `gemini` (default, free tier), `groq`, `openrouter`, or `ollama`
+  (local, fully offline). Override with `--llm-model` / `--llm-base-url`. Free
+  keys: Gemini <https://aistudio.google.com/apikey>, Groq
+  <https://console.groq.com/keys>.
+- **AI / Claude** (`--mode ai`): `--model` (default `claude-opus-4-8`); the long
+  instruction prompt is cached so batch runs stay cheap. Key:
+  <https://console.anthropic.com>.
 
 | Option | Meaning |
 | ------ | ------- |

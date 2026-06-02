@@ -479,6 +479,48 @@ def test_ai_mapping_routes_by_category():
     assert fx[0][0] == "QCT25-7572.16"  # report number in column A
 
 
+def test_llm_parse_json_tolerates_fences_and_prose():
+    from report_analyzer.llm_extract import _parse_json
+
+    assert _parse_json('{"a": 1}') == {"a": 1}
+    assert _parse_json('```json\n{"a": 1}\n```') == {"a": 1}
+    assert _parse_json('Here you go:\n{"a": 1, "b": "x"}\nThanks!') == {"a": 1, "b": "x"}
+
+
+def test_llm_resolve_provider_defaults_and_key():
+    import os
+    from report_analyzer.llm_extract import _resolve
+
+    # Provider defaults fill in base_url + model; no key -> api_key is None.
+    base, model, key = _resolve("gemini", None, None, None)
+    assert "generativelanguage.googleapis.com" in base
+    assert model == "gemini-2.0-flash"
+
+    # An env key for the provider is picked up.
+    os.environ["GROQ_API_KEY"] = "test-key-123"
+    try:
+        base, model, key = _resolve("groq", None, None, None)
+        assert key == "test-key-123"
+        assert "groq.com" in base
+    finally:
+        del os.environ["GROQ_API_KEY"]
+
+    # Ollama needs no real key.
+    base, model, key = _resolve("ollama", None, None, None)
+    assert key == "ollama" and "11434" in base
+
+
+def test_llm_skeleton_matches_schema_shape():
+    from report_analyzer.ai_extract import SCHEMA
+    from report_analyzer.llm_extract import _skeleton
+
+    sk = _skeleton(SCHEMA)
+    assert sk["report_number"] == ""
+    assert isinstance(sk["specimens"], list) and isinstance(sk["specimens"][0], dict)
+    assert sk["specimens"][0]["design_pressure"] == ""
+    assert isinstance(sk["specimens"][0]["frame"], list)
+
+
 # --------------------------------------------------------------------------- #
 # Script runner (no pytest required)
 # --------------------------------------------------------------------------- #

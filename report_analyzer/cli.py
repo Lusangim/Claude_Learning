@@ -24,22 +24,33 @@ from .models import Report
 from .parsing import analyze_pdf
 
 
-def _use_ai(mode: str) -> bool:
-    """Decide whether to use the AI backend for the given --mode."""
-    if mode == "ai":
-        return True
-    if mode == "rules":
-        return False
-    # auto: use AI when a key is available, else fall back to rules.
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+def _select_backend(mode: str) -> str:
+    """Resolve --mode to a concrete backend: 'ai', 'llm', or 'rules'."""
+    if mode in ("ai", "llm", "rules"):
+        return mode
+    # auto: prefer Claude if its key is set, then a free-LLM key, else rules.
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return "ai"
+    from .llm_extract import provider_key_envs
+
+    if any(os.environ.get(v) for v in provider_key_envs() + ["LLM_API_KEY"]):
+        return "llm"
+    return "rules"
 
 
-def _analyze_one(path: str, mode: str, model: str, password: str) -> Report:
-    if _use_ai(mode):
+def _analyze_one(path: str, backend: str, args) -> Report:
+    if backend == "ai":
         from .ai_extract import analyze_pdf_ai
 
-        return analyze_pdf_ai(path, model=model, password=password)
-    return analyze_pdf(path, password=password)
+        return analyze_pdf_ai(path, model=args.model, password=args.password)
+    if backend == "llm":
+        from .llm_extract import analyze_pdf_llm
+
+        return analyze_pdf_llm(
+            path, provider=args.provider, model=args.llm_model,
+            base_url=args.llm_base_url, password=args.password,
+        )
+    return analyze_pdf(path, password=args.password)
 
 
 def _gather_pdfs(inputs: List[str]) -> List[str]:
@@ -74,17 +85,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--password", default="", help="password for encrypted PDFs (default: empty)")
     p.add_argument(
-        "--mode", choices=["auto", "ai", "rules"], default="auto",
-        help="extraction backend: 'ai' (Claude, handles any format; needs "
-        "ANTHROPIC_API_KEY), 'rules' (built-in TAS/NAFS parser, no API), or "
-        "'auto' (AI if a key is set, else rules). Default: auto.",
+        "--mode", choices=["auto", "ai", "llm", "rules"], default="auto",
+        help="extraction backend: 'ai' (Claude, needs ANTHROPIC_API_KEY), "
+        "'llm' (free/any OpenAI-compatible LLM, e.g. Gemini free tier), 'rules' "
+        "(built-in TAS/NAFS parser, no API), or 'auto' (pick by available keys, "
+        "else rules). Default: auto.",
     )
     p.add_argument("--ai", action="store_true", help="shortcut for --mode ai")
+    p.add_argument("--llm", action="store_true", help="shortcut for --mode llm")
     p.add_argument("--rules", action="store_true", help="shortcut for --mode rules")
     p.add_argument(
         "--model", default="claude-opus-4-8",
         help="Claude model for --mode ai (default: claude-opus-4-8)",
     )
+    p.add_argument(
+        "--provider", choices=["gemini", "groq", "openrouter", "ollama"], default="gemini",
+        help="provider for --mode llm (default: gemini free tier)",
+    )
+    p.add_argument("--llm-model", help="model name for --mode llm (overrides the provider default)")
+    p.add_argument("--llm-base-url", help="custom OpenAI-compatible base URL for --mode llm")
     p.add_argument("--print", dest="show", action="store_true", help="print a summary per report")
     p.add_argument("--quiet", action="store_true", help="suppress progress messages")
     return p
@@ -97,16 +116,17 @@ def main(argv: List[str] | None = None) -> int:
         print("No PDF files found.", file=sys.stderr)
         return 2
 
-    mode = "ai" if args.ai else "rules" if args.rules else args.mode
+    mode = ("ai" if args.ai else "llm" if args.llm else "rules" if args.rules else args.mode)
+    backend = _select_backend(mode)
     if not args.quiet:
-        backend = "AI (Claude)" if _use_ai(mode) else "rules"
-        print(f"[backend] {backend}", file=sys.stderr)
+        labels = {"ai": "AI (Claude)", "llm": f"free LLM ({args.provider})", "rules": "rules"}
+        print(f"[backend] {labels[backend]}", file=sys.stderr)
 
     reports: List[Report] = []
     failures = 0
     for path in pdfs:
         try:
-            report = _analyze_one(path, mode, args.model, args.password)
+            report = _analyze_one(path, backend, args)
         except Exception as exc:  # keep going across a batch
             failures += 1
             print(f"[error] {path}: {exc}", file=sys.stderr)

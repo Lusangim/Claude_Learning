@@ -4,3 +4,6 @@ openpyxl>=3.1
 # anthropic powers AI extraction (--mode ai), which handles any report format.
 # Only needed for AI mode; the built-in rules parser works without it.
 anthropic>=0.69
+# openai powers free/bring-your-own LLM extraction (--mode llm) against any
+# OpenAI-compatible endpoint (Gemini free tier, Groq, OpenRouter, Ollama).
+openai>=1.40
