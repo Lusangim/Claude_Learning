@@ -24,6 +24,27 @@ from .models import Report
 from .parsing import analyze_pdf
 
 
+def _load_dotenv(path: str = ".env") -> None:
+    """Load KEY=VALUE lines from a .env file into the environment.
+
+    Lets you set your API key once in a git-ignored .env file instead of
+    typing it every run. Existing environment variables are never overridden.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except FileNotFoundError:
+        pass
+
+
 def _select_backend(mode: str) -> str:
     """Resolve --mode to a concrete backend: 'ai', 'llm', or 'rules'."""
     if mode in ("ai", "llm", "rules"):
@@ -110,6 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: List[str] | None = None) -> int:
+    _load_dotenv()  # pick up keys from a local .env (git-ignored) if present
     args = build_parser().parse_args(argv)
     pdfs = _gather_pdfs(args.pdfs)
     if not pdfs:
