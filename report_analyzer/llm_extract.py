@@ -29,7 +29,7 @@ from .models import Report
 PROVIDERS = {
     "gemini": {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-        "model": "gemini-2.0-flash",
+        "model": "gemini-2.5-flash",
         "key_env": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
         "help": "Get a free key at https://aistudio.google.com/apikey, then set GEMINI_API_KEY.",
     },

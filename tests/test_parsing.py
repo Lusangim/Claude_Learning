@@ -494,7 +494,7 @@ def test_llm_resolve_provider_defaults_and_key():
     # Provider defaults fill in base_url + model; no key -> api_key is None.
     base, model, key = _resolve("gemini", None, None, None)
     assert "generativelanguage.googleapis.com" in base
-    assert model == "gemini-2.0-flash"
+    assert model == "gemini-2.5-flash"
 
     # An env key for the provider is picked up.
     os.environ["GROQ_API_KEY"] = "test-key-123"
