@@ -53,7 +53,14 @@ _DATE_FMT = "mm/dd/yyyy"
 
 
 def is_door(report: Report) -> bool:
-    """Route doors / sliding / patio products to the SD sheet."""
+    """Route doors / sliding / patio products to the SD sheet.
+
+    Honours an explicit ``product_category`` (set by AI extraction) when present;
+    otherwise falls back to keyword matching on the product type / model.
+    """
+    category = (getattr(report, "product_category", "") or "").strip().lower()
+    if category in ("door", "window"):
+        return category == "door"
     p = (report.product_type + " " + report.series_model).lower()
     return any(word in p for word in ("door", "sliding", "patio", "slider"))
 

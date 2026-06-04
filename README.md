@@ -7,12 +7,29 @@ hardware construction of every test specimen — into **per-report JSON**, a
 "TR Summary" template layout** (one row per specimen, windows routed to the
 `FX Temp.` sheet and doors to `SD Temp.`).
 
-Two common laboratory report layouts are recognised, with a generic fallback:
+## Extraction backends
+
+| Backend | Flag | Needs | Handles |
+| ------- | ---- | ----- | ------- |
+| **Free LLM** | `--mode llm` | a **free** key (e.g. Gemini free tier) or local Ollama | **Any** lab/format |
+| **AI (Claude)** | `--mode ai` | `ANTHROPIC_API_KEY` (~1–5¢/report) | **Any** lab/format — highest accuracy |
+| **Rules** | `--mode rules` | nothing (offline) | The two built-in layouts below |
+
+Default is **`--mode auto`**: it picks Claude if `ANTHROPIC_API_KEY` is set, else
+a free-LLM key if one is set (Gemini/Groq/OpenRouter), else the offline rules
+parser. **All three backends produce the same JSON / CSV / XLSX output** — they
+fill the identical fields, so you can run for free and still get the FX/SD
+"TR Summary" spreadsheet.
+
+The rules parser recognises two common layouts, with a generic fallback:
 
 | Family | Example standard | Layout | Specimens |
 | ------ | ---------------- | ------ | --------- |
 | **TAS** | TAS 201 / 202 / 203 (Florida Building Code, HVHZ) | numbered `SECTION` headers, unruled tables | usually one |
 | **NAFS** | AAMA/WDMA/CSA 101/I.S.2/A440 | labelled headers, ruled tables | often several |
+
+For the many other lab formats out there, use **AI mode** — it needs no
+per-lab code.
 
 ## What it extracts
 
@@ -69,7 +86,31 @@ python -m report_analyzer ./reports --xlsx output/filled.xlsx \
 
 # Encrypted PDF with a user password
 python -m report_analyzer secured.pdf --password "hunter2" --print
+
+# FREE LLM extraction (handles any format) — e.g. Google Gemini free tier
+export GEMINI_API_KEY=...                  # free key: https://aistudio.google.com/apikey
+python -m report_analyzer ./reports --mode llm --xlsx output/TR_Summary.xlsx
+
+# AI extraction with Claude (highest accuracy) — paid
+export ANTHROPIC_API_KEY=sk-ant-...        # Windows: set ANTHROPIC_API_KEY=sk-ant-...
+python -m report_analyzer ./reports --mode ai --xlsx output/TR_Summary.xlsx
 ```
+
+### Picking a backend
+
+`--mode auto` (default) chooses by which key is set (Claude → free-LLM → rules).
+Force one with `--mode llm`, `--mode ai`, or `--mode rules` (`--llm` / `--ai` /
+`--rules` are shortcuts). All read each report into the **same** fields, so any
+backend yields the same JSON/CSV/XLSX.
+
+- **Free LLM** (`--mode llm`): any OpenAI-compatible endpoint. `--provider`
+  selects `gemini` (default, free tier), `groq`, `openrouter`, or `ollama`
+  (local, fully offline). Override with `--llm-model` / `--llm-base-url`. Free
+  keys: Gemini <https://aistudio.google.com/apikey>, Groq
+  <https://console.groq.com/keys>.
+- **AI / Claude** (`--mode ai`): `--model` (default `claude-opus-4-8`); the long
+  instruction prompt is cached so batch runs stay cheap. Key:
+  <https://console.anthropic.com>.
 
 | Option | Meaning |
 | ------ | ------- |
@@ -77,6 +118,9 @@ python -m report_analyzer secured.pdf --password "hunter2" --print
 | `--csv FILE` | write a flat one-row-per-specimen summary across all inputs |
 | `--xlsx FILE` | write an Excel summary in the FX/SD "TR Summary" layout |
 | `--xlsx-template SRC` | with `--xlsx`, append rows into a copy of template `SRC` instead of a fresh workbook |
+| `--mode {auto,ai,rules}` | extraction backend (default `auto`) |
+| `--ai` / `--rules` | shortcuts for `--mode ai` / `--mode rules` |
+| `--model` | Claude model for AI mode (default `claude-opus-4-8`) |
 | `--print` | print a readable summary for each report |
 | `--password` | password for encrypted PDFs (default: empty) |
 | `--quiet` | suppress progress messages |
@@ -153,10 +197,11 @@ python -m report_analyzer samples/sample_tas_report.pdf --print
 ```
 PDF ─▶ extraction.py ─▶ Document(pages: text + cleaned tables)
                               │
-                         parsing.py  ── detect family (TAS / NAFS / generic)
-                              │            ├─ identity & dates  (anchored regex)
-                              │            ├─ per-specimen performance
-                              │            └─ frame / glazing / hardware
+                ┌─────────────┴─────────────┐
+        parsing.py (rules)           ai_extract.py (Claude)
+        detect TAS / NAFS            one structured-output call,
+        regex + tables               any format → the schema
+                └─────────────┬─────────────┘
                               ▼
                           Report (models.py)
                               │

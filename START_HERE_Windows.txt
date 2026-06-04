@@ -22,6 +22,24 @@ HOW TO USE IT
 To analyze a different folder instead of "reports":
       python run.py "C:\path\to\your\reports"
 
+HANDLING ANY REPORT FORMAT
+--------------------------
+The built-in parser (free, offline) knows two common lab formats. For other
+companies/formats, let an AI read the report. Two options:
+
+FREE - Google Gemini free tier:
+   1. Get a free key at  https://aistudio.google.com/apikey
+   2. In a Command Prompt here:
+         set GEMINI_API_KEY=your-free-key-here
+         python -m report_analyzer reports --mode llm --xlsx output\TR_Summary.xlsx
+
+PAID (highest accuracy) - Claude:
+         set ANTHROPIC_API_KEY=sk-ant-your-key-here
+         python -m report_analyzer reports --mode ai --xlsx output\TR_Summary.xlsx
+
+Either way the output is the same TR_Summary.xlsx. "python run.py" picks AI/LLM
+automatically once a key is set, else uses the free built-in parser.
+
 OPTIONAL - append into your OWN template instead of a new file
 --------------------------------------------------------------
       python -m report_analyzer reports --xlsx output\filled.xlsx --xlsx-template "YourTemplate.xlsx"
