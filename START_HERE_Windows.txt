@@ -29,9 +29,12 @@ companies/formats, let an AI read the report. Two options:
 
 FREE - Google Gemini free tier:
    1. Get a free key at  https://aistudio.google.com/apikey
-   2. In a Command Prompt here:
-         set GEMINI_API_KEY=your-free-key-here
+   2. Set the key once (so you don't retype it): make a copy of ".env.example"
+      named ".env", open it, and paste your key after GEMINI_API_KEY=.
+      (".env" is private - it is never uploaded or committed.)
+   3. Run:
          python -m report_analyzer reports --mode llm --xlsx output\TR_Summary.xlsx
+   (Or, instead of the .env file, just: set GEMINI_API_KEY=your-key-here)
 
 PAID (highest accuracy) - Claude:
          set ANTHROPIC_API_KEY=sk-ant-your-key-here

@@ -96,6 +96,21 @@ export ANTHROPIC_API_KEY=sk-ant-...        # Windows: set ANTHROPIC_API_KEY=sk-a
 python -m report_analyzer ./reports --mode ai --xlsx output/TR_Summary.xlsx
 ```
 
+### Setting your API key once (`.env`)
+
+So you don't type the key every run, copy `.env.example` to `.env` and paste
+your key there — `.env` is git-ignored (never committed) and loaded
+automatically:
+
+```bash
+cp .env.example .env          # then edit .env and paste your key
+# .env contains e.g.:  GEMINI_API_KEY=your-free-key
+python -m report_analyzer reports --mode llm --xlsx output/TR_Summary.xlsx
+```
+
+In a GitHub Codespace you can instead add it as a **Codespaces secret**
+(Settings → Codespaces → Secrets) so it's present in every terminal.
+
 ### Picking a backend
 
 `--mode auto` (default) chooses by which key is set (Claude → free-LLM → rules).

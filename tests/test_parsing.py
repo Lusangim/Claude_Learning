@@ -510,6 +510,25 @@ def test_llm_resolve_provider_defaults_and_key():
     assert key == "ollama" and "11434" in base
 
 
+def test_load_dotenv_sets_and_preserves():
+    import os
+    import tempfile
+    from report_analyzer.cli import _load_dotenv
+
+    path = os.path.join(tempfile.mkdtemp(), ".env")
+    with open(path, "w") as f:
+        f.write("# a comment\nRA_TEST_KEY = hello123 \nRA_EXISTING='fromfile'\n")
+    os.environ.pop("RA_TEST_KEY", None)
+    os.environ["RA_EXISTING"] = "preset"
+    try:
+        _load_dotenv(path)
+        assert os.environ["RA_TEST_KEY"] == "hello123"          # loaded + trimmed
+        assert os.environ["RA_EXISTING"] == "preset"            # existing not overridden
+    finally:
+        os.environ.pop("RA_TEST_KEY", None)
+        os.environ.pop("RA_EXISTING", None)
+
+
 def test_llm_skeleton_matches_schema_shape():
     from report_analyzer.ai_extract import SCHEMA
     from report_analyzer.llm_extract import _skeleton
